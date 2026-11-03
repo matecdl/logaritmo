@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La función logarítmica</title>
+<style>
+:root{--bg:#eef3f7;--card:#fff;--ink:#14213d;--muted:#5a6578;--curve:#d6246e;--asy:#0b7a75;--grid:#d5e1ea;--axis:#14213d;--line:#c6d3de;--soft:#e3edf4;--ok:#1a7f43;--bad:#b3261e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1620;--card:#18222f;--ink:#e8eef5;--muted:#9aa7b8;--curve:#ff5c9a;--asy:#4fd1c5;--grid:#26354a;--axis:#c9d6e4;--line:#33445a;--soft:#223045;--ok:#5fd68a;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#0f1620;--card:#18222f;--ink:#e8eef5;--muted:#9aa7b8;--curve:#ff5c9a;--asy:#4fd1c5;--grid:#26354a;--axis:#c9d6e4;--line:#33445a;--soft:#223045;--ok:#5fd68a;--bad:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:960px;margin:0 auto;padding:16px}
+h1{font:700 1.7rem/1.2 Georgia,"Times New Roman",serif;margin:4px 0 2px}
+.sub{margin:0 0 14px;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{flex:1 1 140px;min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,460px) 1fr;gap:18px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+canvas{display:block;width:100%;aspect-ratio:1/1;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.side{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.ctl{margin-bottom:12px}
+.ctl label{display:block;font-weight:600;margin-bottom:2px}
+input[type=range]{width:100%;height:32px;accent-color:var(--curve)}
+select,input[type=text]{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:44px}
+select{width:100%}
+input[type=text]{width:6.5em;text-align:center}
+.formula{font:italic 1.55rem/1.3 Georgia,"Times New Roman",serif;color:var(--curve);background:var(--soft);border-radius:10px;padding:10px 14px;margin:6px 0 12px}
+.formula sub{font-size:.6em}
+ul{margin:0 0 10px;padding-left:20px}
+.note{color:var(--muted);font-size:.94rem;margin:8px 0 0}
+.qq{margin:12px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qq label{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.qq input[type=radio]{width:20px;height:20px;accent-color:var(--curve)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 8px}
+.btns button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.btns .pri{background:var(--curve);border-color:var(--curve);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--asy);outline-offset:2px}
+#fb p{margin:4px 0}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:.92rem;min-width:100%}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:center;white-space:nowrap}
+th{background:var(--soft)}
+</style>
+</head>
+<body>
+<main>
+<h1>La función logarítmica</h1>
+<p class="sub">Explora cómo cambia y = k · log<sub>a</sub> x + p al variar k y p, y practica con ejercicios.</p>
+<div class="tabs" role="tablist">
+<button role="tab" data-m="1" aria-selected="true">Efecto de k</button>
+<button role="tab" data-m="2" aria-selected="false">Efecto de p</button>
+<button role="tab" data-m="3" aria-selected="false">Ejercicios</button>
+</div>
+<div class="grid">
+<canvas id="cv" role="img" aria-label="Gráfica de la función logarítmica"></canvas>
+<div class="side" id="side"></div>
+</div>
+</main>
+<script>
+const $=s=>document.querySelector(s),cv=$('#cv'),ctx=cv.getContext('2d'),side=$('#side');
+const R=n=>Math.floor(Math.random()*(n+1));
+const st={a:2,k:2,p:1,b:1};let mode=1,ex=null,solved=0;
+const num=n=>String(+n.toPrecision(3)).replace('.',',').replace('-','−');
+const NOTE={1:'Al variar <b>k</b> la gráfica se estira (|k| grande) o se aplana (|k| cercano a 0); si k es negativo se refleja respecto al eje OX. El corte con OX es siempre <b>(1, 0)</b>. La curva gris discontinua es y = log<sub>a</sub> x.',2:'Al variar <b>p</b> la gráfica se traslada hacia arriba (p &gt; 0) o hacia abajo (p &lt; 0). La asíntota <b>x = 0</b> no cambia, pero sí el corte con OX. La curva gris discontinua es y = log<sub>a</sub> x.'};
+function formula(kk,a,p){
+  if(kk===0)return 'y = '+num(p);
+  const c=kk===1?'':kk===-1?'−':num(kk)+'·';
+  let s='y = '+c+'log<sub>'+a+'</sub> x';
+  if(p>0)s+=' + '+num(p);else if(p<0)s+=' − '+num(-p);
+  return s;
+}
+function props(kk,a,p){
+  if(kk===0)return '<p>Con <b>k = 0</b> desaparece el logaritmo: la gráfica es la recta horizontal y = '+num(p)+'.</p>';
+  return '<ul><li>Dominio: <b>(0, +∞)</b></li><li>Recorrido: <b>ℝ</b></li><li>Asíntota vertical: <b>x = 0</b></li><li>Corte con OX: <b>('+num(Math.pow(a,-p/kk))+', 0)</b></li><li>'+(kk>0?'Creciente':'Decreciente')+'</li></ul>';
+}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw(kk,a,p,show){
+  const W=cv.clientWidth,d=window.devicePixelRatio||1;
+  cv.width=cv.height=Math.round(W*d);ctx.setTransform(d,0,0,d,0,0);
+  const X0=-3,X1=9,Y1=6,s=W/12,px=x=>(x-X0)*s,py=y=>(Y1-y)*s;
+  ctx.fillStyle=css('--card');ctx.fillRect(0,0,W,W);
+  ctx.lineWidth=1;ctx.strokeStyle=css('--grid');ctx.beginPath();
+  for(let i=-3;i<=9;i++){ctx.moveTo(px(i),0);ctx.lineTo(px(i),W)}
+  for(let j=-6;j<=6;j++){ctx.moveTo(0,py(j));ctx.lineTo(W,py(j))}
+  ctx.stroke();
+  ctx.strokeStyle=css('--axis');ctx.beginPath();ctx.moveTo(0,py(0));ctx.lineTo(W,py(0));ctx.stroke();
+  ctx.fillStyle=css('--muted');ctx.font='11px system-ui,sans-serif';
+  for(let i=-2;i<=9;i++)if(i)ctx.fillText(i,px(i)-3,py(0)+14);
+  for(let j=-5;j<=5;j++)if(j)ctx.fillText(j,px(0)+5,py(j)-3);
+  ctx.save();ctx.strokeStyle=css('--asy');ctx.lineWidth=2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(px(0),0);ctx.lineTo(px(0),W);ctx.stroke();ctx.restore();
+  ctx.fillStyle=css('--asy');ctx.fillText('x = 0',px(0)+6,14);
+  if(!show){ctx.fillStyle=css('--muted');ctx.font='14px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('La gráfica aparecerá aquí',px(4.5),py(2));ctx.textAlign='start';return}
+  const curve=(f,col,w,dash)=>{ctx.save();ctx.beginPath();ctx.rect(0,0,W,W);ctx.clip();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.beginPath();
+    const N=3000,x0=1e-4;for(let i=0;i<=N;i++){const x=x0*Math.pow(X1/x0,i/N),y=f(x);i?ctx.lineTo(px(x),py(y)):ctx.moveTo(px(x),py(y))}
+    ctx.stroke();ctx.restore()};
+  if(mode<3&&(kk!==1||p!==0))curve(x=>Math.log(x)/Math.log(a),css('--muted'),1.5,[5,5]);
+  curve(x=>kk*Math.log(x)/Math.log(a)+p,css('--curve'),3);
+  if(kk!==0){const t=Math.pow(a,-p/kk);if(t>X0&&t<X1){ctx.beginPath();ctx.arc(px(t),py(0),5,0,7);ctx.fillStyle=css('--curve');ctx.fill();ctx.strokeStyle=css('--card');ctx.lineWidth=2;ctx.stroke()}}
+}
+function explore(m){
+  const k=m===1;
+  side.innerHTML='<div class="ctl"><label>Base a = <b id="va"></b></label><input type="range" id="ia" min="2" max="9" step="1" value="'+st.a+'"></div>'+
+  '<div class="ctl"><label>'+(k?'Constante k':'Constante p')+' = <b id="vv"></b></label><input type="range" id="iv" min="-5" max="5" step="0.5" value="'+(k?st.k:st.p)+'"></div>'+
+  '<div class="ctl"><label for="ib">Tipo de base</label><select id="ib"><option value="1">Base mayor que 1</option><option value="-1">Base menor que 1</option></select></div>'+
+  '<div class="formula" id="fm"></div><div id="pr"></div><p class="note" id="nt"></p>';
+  $('#ib').value=st.b;
+  $('#ia').oninput=e=>{st.a=+e.target.value;upd()};
+  $('#iv').oninput=e=>{st[k?'k':'p']=+e.target.value;upd()};
+  $('#ib').onchange=e=>{st.b=+e.target.value;upd()};
+}
+function upd(){
+  const m=mode,kk=(m===1?st.k:1)*st.b,p=m===2?st.p:0;
+  $('#va').textContent=st.a;$('#vv').textContent=num(m===1?st.k:st.p);
+  $('#fm').innerHTML=formula(kk,st.a,p);$('#pr').innerHTML=props(kk,st.a,p);
+  $('#nt').innerHTML=NOTE[m]+(st.b<0?' Con base menor que 1 se usa −log<sub>a</sub> x, que es igual a log<sub>1/a</sub> x.':'');
+  draw(kk,st.a,p,true);
+}
+function newEx(){
+  const a=2+R(4),tps=R(1)?1:-1;let k;do{k=1+R(4)}while(k===a);
+  ex={a,kk:tps*k,p:R(6)-3,rev:false,ok:false};
+}
+const val=s=>parseFloat(String(s).replace(',','.').replace('−','-'));
+function reveal(){
+  const {a,kk,p}=ex;ex.rev=true;draw(kk,a,p,true);
+  let xs='',ys='';for(let y=-3;y<=3;y++){xs+='<td>'+num(Math.pow(a,(y-p)/kk))+'</td>';ys+='<td>'+num(y)+'</td>'}
+  $('#tb').innerHTML='<div class="tw"><table><tr><th>x</th>'+xs+'</tr><tr><th>f(x)</th>'+ys+'</tr></table></div>'+props(kk,a,p);
+}
+function exercise(){
+  const {a,kk,p}=ex;
+  side.innerHTML='<p style="margin:0">Estudia y representa la función:</p><div class="formula">'+formula(kk,a,p)+'</div>'+
+  '<div class="qq"><b>1.</b> Es una función <label><input type="radio" name="g" value="1"> creciente</label><label><input type="radio" name="g" value="-1"> decreciente</label></div>'+
+  '<div class="qq"><b>2.</b> Corte con el eje OX: ( <input type="text" id="q2" inputmode="decimal" autocomplete="off" aria-label="Abscisa del corte con OX"> , 0 )</div>'+
+  '<div class="qq"><b>3.</b> f('+a*a+') = <input type="text" id="q3" inputmode="decimal" autocomplete="off" aria-label="Valor de la función"></div>'+
+  '<div class="btns"><button class="pri" id="bc">Comprobar</button><button id="bs">Ver gráfica y tabla</button><button id="bn">Otro ejercicio</button></div>'+
+  '<div id="fb" aria-live="polite"></div><div id="tb"></div><p class="note" id="sc">Ejercicios resueltos: '+solved+'</p>';
+  $('#bc').onclick=()=>{
+    const g=document.querySelector('input[name=g]:checked'),t=Math.pow(a,-p/kk);
+    const o1=!!g&&+g.value===Math.sign(kk),o2=Math.abs(val($('#q2').value)-t)<=Math.max(0.01,0.01*t),o3=Math.abs(val($('#q3').value)-(2*kk+p))<0.01;
+    const L=(o,t1,t2)=>'<p class="'+(o?'ok':'bad')+'">'+(o?'✓ ':'✗ ')+(o?t1:t2)+'</p>';
+    $('#fb').innerHTML=L(o1,'Crecimiento correcto.','Fíjate en el signo del coeficiente que multiplica al logaritmo.')+
+      L(o2,'Corte con OX correcto.','Resuelve y = 0: log<sub>'+a+'</sub> x = −p/k, así que x = '+a+'<sup>−p/k</sup>.')+
+      L(o3,'f('+a*a+') correcto.','Recuerda que log<sub>'+a+'</sub>('+a*a+') = 2; sustitúyelo en la fórmula.');
+    if(o1&&o2&&o3){if(!ex.ok){ex.ok=true;solved++;$('#sc').textContent='Ejercicios resueltos: '+solved}reveal()}
+  };
+  $('#bs').onclick=reveal;
+  $('#bn').onclick=()=>{newEx();exercise();draw(0,2,0,false)};
+}
+function redraw(){if(mode<3)upd();else if(ex.rev)draw(ex.kk,ex.a,ex.p,true);else draw(0,2,0,false)}
+function go(m){
+  mode=m;document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.m===m));
+  if(m<3){explore(m);upd()}else{if(!ex)newEx();exercise();ex.rev?reveal():draw(0,2,0,false)}
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>go(+b.dataset.m));
+addEventListener('resize',redraw);
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',redraw);
+go(1);
+</script>
+</body>
+</html>
